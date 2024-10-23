@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ethan Sam - Cybersecurity Portfolio</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <div id="shield"></div>
+        <div class="game-name">ETHAN SAM</div>
+        <div class="game-score">Score: <span id="score">0</span> | HP: <span id="hp">100</span></div>
+        <div class="game-over">
+            <h2>System Compromised!</h2>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button id="restart-button">Reinitialize Defense Systems</button>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+    
+    <!-- Game Scripts -->
+    <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
