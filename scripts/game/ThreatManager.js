@@ -14,6 +14,9 @@ export class ThreatManager {
         ];
         this.container = document.getElementById('game-container');
         this.nameBox = document.querySelector('.game-name').getBoundingClientRect();
+        
+        // Initialize DDOS effect particles array
+        this.ddosParticles = [];
     }
 
     createThreat() {
@@ -29,9 +32,56 @@ export class ThreatManager {
         threat.style.left = x + 'px';
         threat.style.top = y + 'px';
 
+        // Add special styling for DDOS threats
+        if (threatType === 'DDOS_ATTACK') {
+            threat.classList.add('ddos-threat');
+        }
+
         this.container.appendChild(threat);
+        this.threats.push({ 
+            element: threat, 
+            x, 
+            y, 
+            vx, 
+            vy, 
+            type: threatType 
+        });
+    }
+
+    createDDOSParticle(startX, startY, targetX, targetY) {
+        const particle = document.createElement('div');
+        particle.className = 'ddos-particle';
+        particle.style.left = startX + 'px';
+        particle.style.top = startY + 'px';
         
-        this.threats.push({ element: threat, x, y, vx, vy });
+        this.container.appendChild(particle);
+
+        const angle = Math.atan2(targetY - startY, targetX - startX);
+        const speed = 3 + Math.random() * 2;
+
+        return {
+            element: particle,
+            x: startX,
+            y: startY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 60 // Particle lifetime in frames
+        };
+    }
+
+    spawnDDOSEffect(x, y) {
+        const particleCount = 50;
+        const radius = 100;
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2;
+            const startX = x + Math.cos(angle) * radius;
+            const startY = y + Math.sin(angle) * radius;
+
+            this.ddosParticles.push(
+                this.createDDOSParticle(startX, startY, x, y)
+            );
+        }
     }
 
     calculateSpawnPosition() {
@@ -55,20 +105,51 @@ export class ThreatManager {
         return [x, y, (dx / distance) * speed, (dy / distance) * speed];
     }
 
+    updateDDOSParticles() {
+        for (let i = this.ddosParticles.length - 1; i >= 0; i--) {
+            const particle = this.ddosParticles[i];
+            
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.life--;
+
+            particle.element.style.left = particle.x + 'px';
+            particle.element.style.top = particle.y + 'px';
+            particle.element.style.opacity = particle.life / 60;
+
+            if (particle.life <= 0) {
+                particle.element.remove();
+                this.ddosParticles.splice(i, 1);
+            }
+        }
+    }
+
     update() {
+        this.updateDDOSParticles();
+    
         this.threats.forEach((threat, index) => {
+            // Update threat position
             threat.x += threat.vx;
             threat.y += threat.vy;
             threat.element.style.left = threat.x + 'px';
             threat.element.style.top = threat.y + 'px';
-
-            if (this.shield.checkCollision(threat.x, threat.y)) {
+    
+            // Get threat center position for more accurate collision
+            const threatRect = threat.element.getBoundingClientRect();
+            const threatCenterX = threatRect.left + threatRect.width / 2;
+            const threatCenterY = threatRect.top + threatRect.height / 2;
+    
+            // Check shield collision
+            if (this.shield.checkCollision(threatCenterX, threatCenterY)) {
+                if (threat.type === 'DDOS_ATTACK') {
+                    this.spawnDDOSEffect(threatCenterX, threatCenterY);
+                }
                 this.destroyThreat(index, true);
                 return;
             }
-
-            const threatBox = threat.element.getBoundingClientRect();
-            if (this.checkNameCollision(threatBox)) {
+    
+            // Check name box collision
+            if (this.checkNameCollision(threatRect)) {
                 this.destroyThreat(index, false);
                 this.gameState.updateHP(10);
             }
@@ -91,5 +172,9 @@ export class ThreatManager {
     clear() {
         this.threats.forEach(threat => threat.element.remove());
         this.threats = [];
+        
+        // Clear DDOS particles
+        this.ddosParticles.forEach(particle => particle.element.remove());
+        this.ddosParticles = [];
     }
 }
